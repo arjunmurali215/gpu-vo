@@ -36,7 +36,7 @@ kitti_rec:
 #### 2. Building Package
 
 ```python
-cd ~/py-cuda-vo
+cd ~/gpu-vo
 colcon build --symlink-install
 ```
 
