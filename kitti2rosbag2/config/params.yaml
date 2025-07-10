@@ -1,0 +1,8 @@
+kitti_rec:
+  ros__parameters:
+    sequence: 0
+    data_dir: '/docker/KITTI/data_odometry_gray/dataset'
+    odom_dir: '/docker/KITTI/data_odometry_poses/dataset'
+    bag_dir : '/docker/KITTI/bag'
+    odom : True
+  
