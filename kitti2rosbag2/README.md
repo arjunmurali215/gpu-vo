@@ -36,7 +36,7 @@ kitti_rec:
 #### 2. Building Package
 
 ```python
-cd ~/gpu-vo
+cd ~/ros2_ws
 colcon build --symlink-install
 ```
 
