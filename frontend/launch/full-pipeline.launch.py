@@ -24,12 +24,21 @@ def generate_launch_description():
             name='featuretrack',
             output='screen'
         ),
+        
         Node(
             package='frontend',
             executable='dispmap',
             name='dispmap',
             output='screen'
         ),
+
+        Node(
+            package='backend',
+            executable='bundleAdjustment',
+            name='bundleAdjustment',
+            output='screen'
+        ),
+        
         # ExecuteProcess(
         #     cmd=['ros2', 'bag', 'play', '/docker/KITTI/rosbag2'],
         #     output='screen'

@@ -30,6 +30,9 @@ class Triangulate(Node):
         self.new_buf = {}
         
         self.trans_pub = self.create_publisher(TransformStamped, '/trans', 10)
+        self.pcl_pub = self.create_publisher(PointCloud2, '/pts_3d', 10)
+        self.prev_pub = self.create_publisher(PointCloud2, '/pts_2d/prev', 10)
+        self.next_pub = self.create_publisher(PointCloud2, '/pts_2d/next', 10)
 
         # ROS 2 Subscriptions
         self.create_subscription(Image, '/depthmap', self.depth_cb, 50)
@@ -57,7 +60,6 @@ class Triangulate(Node):
             depth_msg = self.depth_buf.pop(fid)
             old_msg = self.old_buf.pop(fid)
             new_msg = self.new_buf.pop(fid)
-
             self.image_callback(depth_msg, old_msg, new_msg)
 
     def image_callback(self, depth_msg, old_msg, new_msg):
@@ -67,6 +69,9 @@ class Triangulate(Node):
             good_new = utils.pointcloud2_to_cupy(new_msg)
 
             pcl, tracked_old, tracked_new = utils.triangulate(depth, good_old, good_new)
+            self.pcl_pub.publish(utils.create_pointcloud2(pcl, old_msg.header.frame_id))
+            self.prev_pub.publish(utils.create_pointcloud2(tracked_old, old_msg.header.frame_id))
+            self.next_pub.publish(utils.create_pointcloud2(tracked_new, old_msg.header.frame_id))
 
             success, rvec, tvec, inliers = cv.solvePnPRansac(
                 cp.asnumpy(pcl),
@@ -88,7 +93,7 @@ class Triangulate(Node):
             # Create TransformStamped message
             transform = TransformStamped()
             transform.header.stamp = self.get_clock().now().to_msg()
-            transform.header.frame_id = "world"
+            transform.header.frame_id = depth_msg.header.frame_id
             transform.child_frame_id = "camera"
 
             transform.transform.translation.x = float(tvec[0])

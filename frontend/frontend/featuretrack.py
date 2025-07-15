@@ -13,7 +13,6 @@ left_image_queue = deque(maxlen=2)
 l_img1, r_img1, l_img2, gpu_pts_l1, gpu_pts_l2, gpu_pts_l1r = utils.initializeImages()
 gftt, klt, stream = utils.initializeFeatureTracking()
 
-
 class FeatureTrack(Node):
     def __init__(self):
         super().__init__('featuretrack')

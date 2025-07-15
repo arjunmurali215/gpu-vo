@@ -1,7 +1,6 @@
 import cv2 as cv
 import cupy as cp
 import numpy as np
-import torch, pypose as pp
 import rclpy
 import ctypes
 from rclpy.node import Node
@@ -9,6 +8,7 @@ from sensor_msgs.msg import Image, PointCloud2, PointField
 from std_msgs.msg import Header
 from cv_bridge import CvBridge
 from message_filters import Subscriber, ApproximateTimeSynchronizer
+
 
 # Initialize all GPU Mats used in the pipeline
 def initializeImages():
@@ -28,8 +28,9 @@ def initializeFeatureTracking():
     blockSize = 1
     winSize = 18
     maxLevel = 2
-    gftt = cv.cuda.createGoodFeaturesToTrackDetector(srcType=cv.CV_8UC1, maxCorners=maxCorners, qualityLevel=qualityLevel, minDistance=minDistance, blockSize=blockSize, useHarrisDetector=False, harrisK=0.04)
-    klt = cv.cuda.SparsePyrLKOpticalFlow.create(winSize=(winSize,winSize), maxLevel=maxLevel)
+    gftt = cv.cuda.createGoodFeaturesToTrackDetector(srcType=cv.CV_8UC1, maxCorners=maxCorners, qualityLevel=qualityLevel, minDistance=minDistance, blockSize=blockSize)
+    klt = cv.cuda.SparsePyrLKOpticalFlow.create(winSize=(winSize, winSize), maxLevel=maxLevel)
+
     stream = cv.cuda.Stream()
     return gftt, klt, stream
 
@@ -82,7 +83,7 @@ def triangulate(depth, good_old, good_new, fx=718.856, fy=718.856, cx=607.1928, 
     z = cp.asarray(z)
     valid_mask = ~cp.isnan(z) & (z > 0) & (z < max_depth)
 
-    # Filter valid 3D points and reproject
+    # # Filter valid 3D points and reproject
     z = z[valid_mask]
     good_new = good_new[valid_mask]
     good_old = good_old[valid_mask]
@@ -139,7 +140,7 @@ def create_pointcloud2(points_cp: cp.ndarray, frame_id="map") -> PointCloud2:
     return msg
 
 # Convert PointCloud2 ROS message to CuPy array
-def pointcloud2_to_cupy(msg: PointCloud2) -> cp.ndarray:
+def pointcloud2_to_cupy(msg: PointCloud2, is3D = False) -> cp.ndarray:
     dtype_map = {
         PointField.FLOAT32: ('f', 4),
         PointField.FLOAT64: ('d', 8),
@@ -166,7 +167,10 @@ def pointcloud2_to_cupy(msg: PointCloud2) -> cp.ndarray:
     np_array = np.frombuffer(msg.data, dtype=np_dtype, count=msg.width * msg.height)
 
     # Extract x and y fields only
-    coords = np.vstack([np_array['x'], np_array['y']]).T  # Shape: Nx2
+    if is3D:
+        coords = np.vstack([np_array['x'], np_array['y'], np_array['z']]).T  # Shape: Nx3
+    else:
+        coords = np.vstack([np_array['x'], np_array['y']]).T  # Shape: Nx2
 
     # Convert to CuPy array
     cp_array = cp.asarray(coords, dtype=cp.float32)
